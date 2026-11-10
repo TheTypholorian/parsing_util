@@ -1,9 +1,7 @@
-package net.typho.data_util.error
+package net.typho.parsing_util.error
 
-import net.typho.data_util.DataFormat
-import net.typho.data_util.codec.Codec
-
-fun <R> ErrorStack?.push(key: String, func: () -> R): R {
+@Suppress("NOTHING_TO_INLINE")
+inline fun <R> ErrorStack?.push(key: String, noinline func: () -> R): R {
     return if (this == null) func() else push(key, func)
 }
 
@@ -11,12 +9,11 @@ class ErrorStack(
     @JvmField
     var valueBeingSerialized: Any? = null,
     @JvmField
-    var codec: Codec<*>? = null,
-    @JvmField
-    var format: DataFormat<*>? = null,
-    @JvmField
     val path: MutableList<String> = mutableListOf()
 ) {
+    @JvmField
+    val attributes = mutableMapOf<String, Any>()
+
     fun push(key: String) {
         path.add(key)
     }
@@ -30,7 +27,7 @@ class ErrorStack(
 
     fun pop() = path.removeLast()
 
-    fun isEmpty() = valueBeingSerialized == null && codec == null && format == null && path.isEmpty()
+    fun isEmpty() = valueBeingSerialized == null && attributes.isEmpty() && path.isEmpty()
 
     override fun toString() = buildList {
         if (path.isNotEmpty()) {
@@ -38,7 +35,6 @@ class ErrorStack(
         }
 
         valueBeingSerialized?.let { add("Value being serialized: $it") }
-        codec?.let { add("Codec: $it") }
-        format?.let { add("Format: $it") }
+        attributes.forEach { (key, value) -> add("$key: $value") }
     }.joinToString(separator = "\n")
 }

@@ -1,6 +1,6 @@
-package net.typho.data_util
+package net.typho.parsing_util
 
-import net.typho.data_util.error.DataReadException
+import net.typho.parsing_util.error.DataReadException
 
 open class ParsingIterator @JvmOverloads constructor(
     @JvmField
@@ -165,9 +165,9 @@ open class ParsingIterator @JvmOverloads constructor(
     override fun toString(): String {
         if (index in range) {
             val section = text.substring((index - 3).coerceAtLeast(range.first), index) + "[" + text[index] + "]" + text.substring(index + 1, (index + 4).coerceAtMost(range.last))
-            return "ParsingIterator(index=$index range=$range position=\"${section.replace("\n", "\\n")}\""
+            return "ParsingIterator(index=$index, range=$range, position=\"${section.replace("\n", "\\n")}\""
         } else {
-            return "ParsingIterator(index=$index range=$range"
+            return "ParsingIterator(index=$index, range=$range)"
         }
     }
 

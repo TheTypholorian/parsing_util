@@ -1,4 +1,4 @@
-package net.typho.data_util.error
+package net.typho.parsing_util.error
 
 class DataReadException : RuntimeException {
     constructor() : super()
