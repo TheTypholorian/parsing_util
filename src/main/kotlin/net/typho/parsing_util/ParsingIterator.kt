@@ -97,6 +97,21 @@ open class ParsingIterator @JvmOverloads constructor(
         return null
     }
 
+    fun nextUntilOrEnd(predicate: (index: Int, char: Char) -> Boolean): String? {
+        val start = index
+        var i = 0
+
+        while (index in range) {
+            val char = next()
+
+            if (predicate(i++, char)) {
+                return text.substring(start, index - 1)
+            }
+        }
+
+        return text.substring(start, index)
+    }
+
     fun takeUntil(predicate: (index: Int, char: Char) -> Boolean): String? {
         val start = index
         var i = 0
