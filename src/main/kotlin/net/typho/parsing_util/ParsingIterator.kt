@@ -1,7 +1,11 @@
 package net.typho.parsing_util
 
 import net.typho.parsing_util.error.DataReadException
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
+@OptIn(ExperimentalContracts::class)
 open class ParsingIterator @JvmOverloads constructor(
     @JvmField
     val text: String,
@@ -83,6 +87,10 @@ open class ParsingIterator @JvmOverloads constructor(
     operator fun get(index: Int) = text[index]
 
     fun nextUntil(predicate: (index: Int, char: Char) -> Boolean): String? {
+        contract {
+            callsInPlace(predicate)
+        }
+
         val start = index
         var i = 0
 
@@ -98,6 +106,10 @@ open class ParsingIterator @JvmOverloads constructor(
     }
 
     fun nextUntilOrEnd(predicate: (index: Int, char: Char) -> Boolean): String {
+        contract {
+            callsInPlace(predicate)
+        }
+
         val start = index
         var i = 0
 
@@ -113,6 +125,10 @@ open class ParsingIterator @JvmOverloads constructor(
     }
 
     fun takeUntil(predicate: (index: Int, char: Char) -> Boolean): String? {
+        contract {
+            callsInPlace(predicate)
+        }
+
         val start = index
         var i = 0
 
@@ -130,6 +146,10 @@ open class ParsingIterator @JvmOverloads constructor(
     }
 
     fun takeUntilOrEnd(predicate: (index: Int, char: Char) -> Boolean): String {
+        contract {
+            callsInPlace(predicate)
+        }
+
         val start = index
         var i = 0
 
@@ -147,6 +167,10 @@ open class ParsingIterator @JvmOverloads constructor(
     }
 
     fun skipUntil(predicate: (index: Int, char: Char) -> Boolean): Int? {
+        contract {
+            callsInPlace(predicate)
+        }
+
         var skipped = 0
         var i = 0
 
@@ -165,6 +189,10 @@ open class ParsingIterator @JvmOverloads constructor(
     }
 
     fun skipUntilOrEnd(predicate: (index: Int, char: Char) -> Boolean): Int {
+        contract {
+            callsInPlace(predicate)
+        }
+
         var skipped = 0
         var i = 0
 
