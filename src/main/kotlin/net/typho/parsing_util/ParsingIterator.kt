@@ -1,43 +1,27 @@
 package net.typho.parsing_util
 
-import net.typho.parsing_util.error.DataReadException
 import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
 @OptIn(ExperimentalContracts::class)
-open class ParsingIterator @JvmOverloads constructor(
+open class ParsingIterator<V> @JvmOverloads constructor(
     @JvmField
-    val text: String,
+    val list: List<V>,
     @JvmField
-    val range: IntRange = text.indices,
-    index: Int = range.first
-) : ListIterator<Char> {
+    val range: IntRange = list.indices,
     @JvmField
-    var index: Int = index
-
-    constructor(text: String, trim: Boolean) : this(
-        text,
-        if (trim) {
-            IntRange(
-                text.takeWhile { it.isWhitespace() }.length,
-                text.length - text.takeLastWhile { it.isWhitespace() }.length - 1
-            )
-        } else {
-            text.indices
-        }
-    )
-
+    var index: Int = range.first
+) : ListIterator<V> {
     override fun hasNext() = index in range
 
     override fun hasPrevious() = index in range
 
-    override fun next(): Char {
+    override fun next(): V {
         if (!hasNext()) {
             throw NoSuchElementException()
         }
 
-        return text[index++]
+        return list[index++]
     }
 
     fun skip(amount: Int) {
@@ -48,45 +32,53 @@ open class ParsingIterator @JvmOverloads constructor(
         index += amount
     }
 
-    fun peek(): Char {
+    fun peek(): V {
         if (index !in range) {
             throw NoSuchElementException()
         }
 
-        return text[index]
+        return list[index]
     }
 
-    fun peekOrNull(): Char? {
+    fun peekOrNull(): V? {
         if (index !in range) {
             return null
         }
 
-        return text[index]
+        return list[index]
     }
 
-    fun currentMatches(text: String): Boolean {
-        return (index + text.length) in range && this.text.startsWith(text, startIndex = index)
+    fun currentMatches(list: List<V>): Boolean {
+        if ((index + list.size) !in range) {
+            return false
+        }
+
+        repeat(list.size) { i ->
+            if (this.list[index + i] != list[i]) {
+                return false
+            }
+        }
+
+        return true
     }
 
-    fun indexOfNext(char: Char) = text.indexOf(char, startIndex = index)
-
-    fun indexOfNext(text: String) = this.text.indexOf(text, startIndex = index)
+    fun indexOfNext(value: V) = list.subList(index, list.size).indexOf(value)
 
     override fun nextIndex() = index
 
-    override fun previous(): Char {
+    override fun previous(): V {
         if (!hasPrevious()) {
             throw NoSuchElementException()
         }
 
-        return text[index--]
+        return list[index--]
     }
 
     override fun previousIndex() = index - 1
 
-    operator fun get(index: Int) = text[index]
+    operator fun get(index: Int) = list[index]
 
-    fun nextUntil(predicate: (index: Int, char: Char) -> Boolean): String? {
+    fun nextUntil(predicate: (index: Int, value: V) -> Boolean): List<V>? {
         contract {
             callsInPlace(predicate)
         }
@@ -95,17 +87,17 @@ open class ParsingIterator @JvmOverloads constructor(
         var i = 0
 
         while (index in range) {
-            val char = next()
+            val value = next()
 
-            if (predicate(i++, char)) {
-                return text.substring(start, index - 1)
+            if (predicate(i++, value)) {
+                return list.subList(start, index - 1)
             }
         }
 
         return null
     }
 
-    fun nextUntilOrEnd(predicate: (index: Int, char: Char) -> Boolean): String {
+    fun nextUntilOrEnd(predicate: (index: Int, value: V) -> Boolean): List<V> {
         contract {
             callsInPlace(predicate)
         }
@@ -114,17 +106,17 @@ open class ParsingIterator @JvmOverloads constructor(
         var i = 0
 
         while (index in range) {
-            val char = next()
+            val value = next()
 
-            if (predicate(i++, char)) {
-                return text.substring(start, index - 1)
+            if (predicate(i++, value)) {
+                return list.subList(start, index - 1)
             }
         }
 
-        return text.substring(start, index)
+        return list.subList(start, index)
     }
 
-    fun takeUntil(predicate: (index: Int, char: Char) -> Boolean): String? {
+    fun takeUntil(predicate: (index: Int, value: V) -> Boolean): List<V>? {
         contract {
             callsInPlace(predicate)
         }
@@ -133,10 +125,10 @@ open class ParsingIterator @JvmOverloads constructor(
         var i = 0
 
         while (index in range) {
-            val char = peek()
+            val value = peek()
 
-            if (predicate(i++, char)) {
-                return text.substring(start, index)
+            if (predicate(i++, value)) {
+                return list.subList(start, index)
             }
 
             next()
@@ -145,7 +137,7 @@ open class ParsingIterator @JvmOverloads constructor(
         return null
     }
 
-    fun takeUntilOrEnd(predicate: (index: Int, char: Char) -> Boolean): String {
+    fun takeUntilOrEnd(predicate: (index: Int, value: V) -> Boolean): List<V> {
         contract {
             callsInPlace(predicate)
         }
@@ -154,19 +146,19 @@ open class ParsingIterator @JvmOverloads constructor(
         var i = 0
 
         while (index in range) {
-            val char = peek()
+            val value = peek()
 
-            if (predicate(i++, char)) {
+            if (predicate(i++, value)) {
                 break
             }
 
             next()
         }
 
-        return text.substring(start, index)
+        return list.subList(start, index)
     }
 
-    fun skipUntil(predicate: (index: Int, char: Char) -> Boolean): Int? {
+    fun skipUntil(predicate: (index: Int, value: V) -> Boolean): Int? {
         contract {
             callsInPlace(predicate)
         }
@@ -175,9 +167,9 @@ open class ParsingIterator @JvmOverloads constructor(
         var i = 0
 
         while (index in range) {
-            val char = peek()
+            val value = peek()
 
-            if (predicate(i++, char)) {
+            if (predicate(i++, value)) {
                 return skipped
             }
 
@@ -188,7 +180,7 @@ open class ParsingIterator @JvmOverloads constructor(
         return null
     }
 
-    fun skipUntilOrEnd(predicate: (index: Int, char: Char) -> Boolean): Int {
+    fun skipUntilOrEnd(predicate: (index: Int, value: V) -> Boolean): Int {
         contract {
             callsInPlace(predicate)
         }
@@ -197,9 +189,9 @@ open class ParsingIterator @JvmOverloads constructor(
         var i = 0
 
         while (index in range) {
-            val char = peek()
+            val value = peek()
 
-            if (predicate(i++, char)) {
+            if (predicate(i++, value)) {
                 break
             }
 
@@ -211,30 +203,18 @@ open class ParsingIterator @JvmOverloads constructor(
     }
 
     @JvmOverloads
-    fun fork(range: IntRange = this.range, index: Int = this.index) = Child(text, range, index)
-
-    @JvmOverloads
-    fun error(message: String, index: Int = this.index): Nothing {
-        throw DataReadException(message, text, index).also {
-            it.stackTrace = it.stackTrace.copyOfRange(1, it.stackTrace.size)
-        }
-    }
+    fun fork(range: IntRange = this.range, index: Int = this.index) = Child(list, range, index)
 
     override fun toString(): String {
-        if (index in range) {
-            val section = text.substring((index - 3).coerceAtLeast(range.first), index) + "[" + text[index] + "]" + text.substring(index + 1, (index + 4).coerceAtMost(range.last))
-            return "ParsingIterator(index=$index, range=$range, position=\"${section.replace("\n", "\\n")}\""
-        } else {
-            return "ParsingIterator(index=$index, range=$range)"
-        }
+        return "ParsingIterator(index=$index, range=$range)"
     }
 
     open inner class Child @JvmOverloads constructor(
-        text: String,
-        range: IntRange = text.indices,
+        input: List<V>,
+        range: IntRange = input.indices,
         index: Int = range.first
-    ) : ParsingIterator(text, range, index) {
-        fun merge(): ParsingIterator {
+    ) : ParsingIterator<V>(input, range, index) {
+        fun merge(): ParsingIterator<V> {
             val parent = this@ParsingIterator
             parent.index = index
             return parent
